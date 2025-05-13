@@ -238,7 +238,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 400
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -246,6 +246,26 @@ class Score:
     def update(self, screen: pg.Surface):
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
+
+
+class Gravity(pg.sprite.Sprite):
+    """
+    重力場に関するクラス
+    Gキーを押したときに画面内の敵をすべて倒す
+    """
+    def __init__(self, life: int):
+        super().__init__()
+
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(self.image, (0, 0, 0), (0, 0, WIDTH, HEIGHT))
+        self.image.set_alpha(100)
+        self.rect = self.image.get_rect()
+        self.life = life
+    
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 
 class EMP(pg.sprite.Sprite):
@@ -281,6 +301,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    grv = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -291,6 +312,9 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value >= 200:
+                grv.add(Gravity(400))
+                score.value -= 200
             if event.type == pg.KEYDOWN and event.key == pg.K_e and score.value >= 20:
                 score.value -= 20
                 EMP(bombs,emys,screen)
@@ -322,6 +346,12 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+        for grvb in pg.sprite.groupcollide(bombs, grv, True, False).keys():
+             exps.add(Explosion(grvb, 50))  # 爆発エフェクト
+
+        for grve in pg.sprite.groupcollide(emys, grv, True, False).keys():
+             exps.add(Explosion(grve, 100))  # 爆発エフェクト
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
@@ -332,6 +362,8 @@ def main():
         exps.update()
         exps.draw(screen)
         score.update(screen)
+        grv.update()
+        grv.draw(screen)
         
         pg.display.update()
         tmr += 1
