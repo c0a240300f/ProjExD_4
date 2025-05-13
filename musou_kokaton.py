@@ -150,25 +150,42 @@ class Bomb(pg.sprite.Sprite):
             self.kill()
 
 
+class Neobeam(pg.sprite.Sprite):
+    """
+    弾幕に関するクラス
+    """
+    def __init__(self, bird: Bird, num):
+        super().__init__()
+        self.bird = bird
+        self.num = num
+    
+    def gen_beams(self):
+        beams_lst = []
+        for i in range(-20, +21, int(1000/(self.num-1))):
+            beams = Beam(self.bird,i)
+            beams_lst.append(beams)
+        return beams_lst
+
+
 class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, angle0=0):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
         """
         super().__init__()
         self.vx, self.vy = bird.dire
-        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle = math.degrees(math.atan2(-self.vy, self.vx))+angle0
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle, 1.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
         self.rect = self.image.get_rect()
         self.rect.centery = bird.rect.centery+bird.rect.height*self.vy
         self.rect.centerx = bird.rect.centerx+bird.rect.width*self.vx
-        self.speed = 10
+        self.speed = 150
 
     def update(self):
         """
@@ -278,7 +295,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 400
+        self.value = 0
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -356,6 +373,8 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+                if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
+                    beams.add(Neobeam(bird,100).gen_beams())
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT:
                 if score.value > 100:
                     score.value -= 100
@@ -392,7 +411,7 @@ def main():
                 score.value += 1
         else:
             for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():  # 防御壁と衝突した爆弾リスト
-            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+                exps.add(Explosion(bomb, 50))  # 爆発エフェクト
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
                 if bomb.state == "inactive":
